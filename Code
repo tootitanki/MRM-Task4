@@ -1,0 +1,44 @@
+import numpy as np
+import pandas as pd
+
+data = pd.read_csv('path_to_your_dataset.csv')
+
+X = data[['Feature1', 'Feature2', 'Feature3']].values  # Independent variables
+Y = data['Price'].values  # Dependent variable (car price)
+
+X = np.column_stack((np.ones(X.shape[0]), X))
+
+theta = np.zeros(X.shape[1])
+
+def cost_function(X, Y, theta):
+    m = len(Y)  # Number of training examples
+    predictions = X.dot(theta)  # Predicted values
+    error = predictions - Y  # Error between predicted and actual values
+    cost = (1/(2*m)) * np.dot(error.T, error)  # Mean squared error
+    return cost
+
+def gradient_descent(X, Y, theta, alpha, iterations):
+    m = len(Y)
+    cost_history = np.zeros(iterations)  # To store cost at each iteration
+
+    for i in range(iterations):
+        # Gradient calculation
+        predictions = X.dot(theta)
+        error = predictions - Y
+        gradient = (1/m) * np.dot(X.T, error)
+        theta = theta - alpha * gradient
+
+        # Store the cost in history
+        cost_history[i] = cost_function(X, Y, theta)
+
+    return theta, cost_history
+
+alpha = 0.01  # Learning rate
+iterations = 1000 
+
+optimal_theta, cost_history = gradient_descent(X, Y, theta, alpha, iterations)
+
+predicted_prices = X.dot(optimal_theta)
+
+print("Optimal Parameters (theta):", optimal_theta)
+print("Predicted Car Prices:", predicted_prices)
