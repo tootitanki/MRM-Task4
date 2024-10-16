@@ -1,0 +1,71 @@
+import numpy as np
+import pandas as pd
+
+data = pd.read_csv('path_to_your_dataset.csv')
+
+numeric_cols = data.select_dtypes(include=[np.number]).columns
+data[numeric_cols] = data[numeric_cols].fillna(data[numeric_cols].mean())
+
+categorical_cols = data.select_dtypes(exclude=[np.number]).columns
+for col in categorical_cols:
+    data[col] = data[col].fillna(data[col].mode()[0])
+
+data = pd.get_dummies(data, columns=categorical_cols, drop_first=True)
+
+from sklearn.preprocessing import MinMaxScaler
+
+scaler = MinMaxScaler()
+data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
+
+# Assume 'Price' is the target column
+X = data.drop('Price', axis=1).values  # Features
+Y = data['Price'].values  # Target (car price)
+
+X = np.column_stack((np.ones(X.shape[0]), X))
+
+# 2.5 Split the dataset into training and testing sets
+# 80% for training, 20% for testing
+train_size = int(0.8 * X.shape[0])
+X_train, X_test = X[:train_size], X[train_size:]
+Y_train, Y_test = Y[:train_size], Y[train_size:]
+
+theta = np.zeros(X_train.shape[1])
+
+def cost_function(X, Y, theta):
+    m = len(Y)  # Number of training examples
+    predictions = X.dot(theta)  # Predicted values
+    error = predictions - Y  # Error between predicted and actual values
+    cost = (1/(2*m)) * np.dot(error.T, error)  # Mean squared error
+    return cost
+
+def gradient_descent(X, Y, theta, alpha, iterations):
+    m = len(Y)
+    cost_history = np.zeros(iterations)  # To store cost at each iteration
+
+    for i in range(iterations):
+        # Gradient calculation
+        predictions = X.dot(theta)
+        error = predictions - Y
+        gradient = (1/m) * np.dot(X.T, error)
+        theta = theta - alpha * gradient
+
+        # Store the cost in history
+        cost_history[i] = cost_function(X, Y, theta)
+
+    return theta, cost_history
+
+alpha = 0.01  # Learning rate
+iterations = 1000  # Number of iterations
+
+optimal_theta, cost_history = gradient_descent(X_train, Y_train, theta, alpha, iterations)
+
+predicted_prices = X_test.dot(optimal_theta)
+
+print("Optimal Parameters (theta):", optimal_theta)
+print("Predicted Car Prices:", predicted_prices)
+
+def mean_squared_error(Y_true, Y_pred):
+    return np.mean((Y_true - Y_pred) ** 2)
+
+mse_test = mean_squared_error(Y_test, predicted_prices)
+print("Test Mean Squared Error:", mse_test)
